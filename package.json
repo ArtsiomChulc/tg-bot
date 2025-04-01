@@ -1,0 +1,17 @@
+{
+  "name": "bot_tg_test",
+  "version": "1.0.0",
+  "description": "bot_tg_test",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "author": "Chults_Artsiom",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemon": "^3.1.5"
+  }
+}
