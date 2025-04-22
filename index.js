@@ -128,6 +128,18 @@ const startBot = async () => {
 			return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
 		}
 
+		if (text === '/subs') {
+			if (userName !== ADMIN_USERNAME) {
+				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+			}
+
+			const ids = [...subscribers];
+			const count = ids.length;
+			const list = ids.join('\n');
+
+			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${list}`);
+		}
+
 		return bot.sendMessage(chatId, `Уупс, я тебя не понимаю...`);
 	});
 
