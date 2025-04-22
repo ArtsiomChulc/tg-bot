@@ -2,42 +2,44 @@ require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
 const {againGameOptions} = require('./gameOptions');
 const {againGame} = require('./helpFunctions');
+const cron = require('node-cron');
+const { addSubscriber, removeSubscriber, getAllSubscribers } = require('./subscribers');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 
 const bot = new telegramApi(token, { polling: true });
 
-const fs = require('fs');
-const cron = require('node-cron');
-const path = require('path');
+// const fs = require('fs');
+
+// const path = require('path');
 
 const chats = {};
 
 const web_app_url = 'https://portfolio-chults.netlify.app';
 
-const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
-
-// Загружаем подписчиков из файла
-let subscribers = new Set();
-
+// const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.js');
+//
+// // Загружаем подписчиков из файла
+// let subscribers = new Set();
+//
 const pendingBroadcasts = new Map(); // временное хранилище рассылки от админа
-
-const loadSubscribers = () => {
-	try {
-		const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
-		subscribers = new Set(JSON.parse(data).map(id => String(id)));
-	} catch (e) {
-		subscribers = new Set(); // файл еще не создан
-	}
-};
-
-const saveSubscribers = () => {
-	fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify([...subscribers]));
-};
-
-// Инициализация подписчиков
-loadSubscribers();
+//
+// const loadSubscribers = () => {
+// 	try {
+// 		const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
+// 		subscribers = new Set(JSON.parse(data).map(id => String(id)));
+// 	} catch (e) {
+// 		subscribers = new Set(); // файл еще не создан
+// 	}
+// };
+//
+// const saveSubscribers = () => {
+// 	fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify([...subscribers]));
+// };
+//
+// // Инициализация подписчиков
+// loadSubscribers();
 
 
 const getMainMenu = (isAdmin = false) => ({
@@ -77,19 +79,12 @@ const startBot = async () => {
 		}
 
 		if (text === "📢 Подписаться" || text === "/subscribe") {
-			if (!subscribers.has(String(chatId))) {
-				console.log(`ПОДПИСКА: Добавлен ${chatId}`);
-				subscribers.add(String(chatId));
-				saveSubscribers();
-			}
+			await addSubscriber(chatId);
 			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
 		}
 
 		if (text === "❌ Отписаться" || text === "/unsubscribe") {
-			if (subscribers.has(String(chatId))) {
-				subscribers.delete(String(chatId));
-				saveSubscribers();
-			}
+			await removeSubscriber(chatId);
 			return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
 		}
 
@@ -118,9 +113,9 @@ const startBot = async () => {
 				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
 			}
 
-			const ids = [...subscribers];
-			const count = ids.length;
-			const list = ids.join('\n');
+			const subscribers = getAllSubscribers();
+			const count = subscribers.length;
+			const list = subscribers.join('\n');
 
 			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${list}`);
 		}
@@ -131,6 +126,7 @@ const startBot = async () => {
 			// Если сообщение — это фото
 			if (msq.photo && msq.caption) {
 				const photo = msq.photo[msq.photo.length - 1].file_id;
+				const subscribers = getAllSubscribers();
 				const caption = msq.caption;
 				for (let subscriberId of subscribers) {
 					await bot.sendPhoto(subscriberId, photo, { caption });
@@ -141,6 +137,7 @@ const startBot = async () => {
 			// Если сообщение — это только фото (без подписи)
 			if (msq.photo && !msq.caption) {
 				const photo = msq.photo[msq.photo.length - 1].file_id;
+				const subscribers = getAllSubscribers();
 				for (let subscriberId of subscribers) {
 					await bot.sendPhoto(subscriberId, photo);
 				}
@@ -149,6 +146,7 @@ const startBot = async () => {
 
 			// Если сообщение — это текст
 			if (text) {
+				const subscribers = getAllSubscribers();
 				for (let subscriberId of subscribers) {
 					await bot.sendMessage(subscriberId, `📢 Рассылка: ${text}`);
 				}
@@ -193,10 +191,11 @@ const startBot = async () => {
 //subscribe message
 
 cron.schedule('30 8 * * *', () => {
+	const subscribers = getAllSubscribers();
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
-		bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка. Пока содержимое рассылки находится в разработке');
+		return bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка. Пока содержимое рассылки находится в разработке');
 	});
 }, {
 	timezone: "Europe/Moscow"
