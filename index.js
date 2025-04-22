@@ -192,7 +192,7 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('46 22 * * *', () => {
+cron.schedule('30 8 * * *', () => {
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
