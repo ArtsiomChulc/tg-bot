@@ -192,12 +192,14 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('0 */2 * * *', () => {
+cron.schedule('42 22 * * *', () => {
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
-		bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка.');
+		bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка. Пока содержимое рассылки находится в разработке');
 	});
+}, {
+	timezone: "Europe/Moscow"
 });
 
 startBot();
