@@ -5,6 +5,7 @@ const {commandsForBotMenu} = require('./comands');
 const {againGame} = require('./helpFunctions');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 
 const bot = new telegramApi(token, { polling: true });
 
@@ -20,6 +21,8 @@ const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
 
 // Загружаем подписчиков из файла
 let subscribers = new Set();
+
+const pendingBroadcasts = new Map(); // временное хранилище рассылки от админа
 
 const loadSubscribers = () => {
 	try {
@@ -44,16 +47,26 @@ const startBot = async () => {
 		const chatId = msq.chat.id;
 		const userName = msq.from.username;
 
+		if (pendingBroadcasts.has(chatId)) {
+			const messageToSend = text;
+			pendingBroadcasts.delete(chatId);
+			for (let subscriberId of subscribers) {
+				await bot.sendMessage(subscriberId, `📢 Рассылка: ${messageToSend}`);
+			}
+			return bot.sendMessage(chatId, "✅ Рассылка отправлена.");
+		}
+
+
 		if (text === "/start") {
 			console.log(userName);
-			return bot.sendMessage(chatId, `Привет, пройдись по меню и узнай что может этот тестовый бот`);
+			return bot.sendMessage(chatId, `Привет! Пользуйся меню, чтобы узнать, что я умею.`);
 		}
 		if (text === "/info") {
 			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/a6f/1ae/a6f1ae15-7c57-3212-8269-f1a0231ad8c2/1.webp');
 			return bot.sendMessage(chatId, `Я буду называть тебя ${userName}`);
 		}
 		if (text === "/about_bot") {
-			return bot.sendMessage(chatId, `Появилась кнопочка с игрой, есть кнопочка с web-приложением (пока YOUTUBE), так-что давай, жмякай ${userName}`);
+			return bot.sendMessage(chatId, `Просто тестовый бот, который умеет загадывать число, открывать YouTube, делать рассылку`);
 		}
 		if (text === '/subscribe') {
 			if (!subscribers.has(chatId)) {
@@ -82,6 +95,13 @@ const startBot = async () => {
 		}
 		if (text === "/game") {
 			return againGame(chatId, bot, chats)
+		}
+		if (text === "/send") {
+			if (userName !== ADMIN_USERNAME) {
+				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+			}
+			pendingBroadcasts.set(chatId, true);
+			return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
 		}
 
 		return bot.sendMessage(chatId, `Уупс, я тебя не понимаю...`);
