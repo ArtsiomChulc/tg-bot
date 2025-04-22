@@ -8,9 +8,34 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 
 const bot = new telegramApi(token, { polling: true });
 
+const fs = require('fs');
+const cron = require('node-cron');
+const path = require('path');
+
 const chats = {};
 
 const web_app_url = 'https://www.youtube.com';
+
+const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
+
+// Загружаем подписчиков из файла
+let subscribers = new Set();
+
+const loadSubscribers = () => {
+	try {
+		const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
+		subscribers = new Set(JSON.parse(data));
+	} catch (e) {
+		subscribers = new Set(); // файл еще не создан
+	}
+};
+
+const saveSubscribers = () => {
+	fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify([...subscribers]));
+};
+
+// Инициализация подписчиков
+loadSubscribers();
 
 const startBot = async () => {
 	await bot.setMyCommands(commandsForBotMenu);
@@ -30,6 +55,22 @@ const startBot = async () => {
 		if (text === "/about_bot") {
 			return bot.sendMessage(chatId, `Появилась кнопочка с игрой, есть кнопочка с web-приложением (пока YOUTUBE), так-что давай, жмякай ${userName}`);
 		}
+		if (text === '/subscribe') {
+			if (!subscribers.has(chatId)) {
+				subscribers.add(chatId);
+				saveSubscribers();
+			}
+			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
+		}
+
+		if (text === '/unsubscribe') {
+			if (subscribers.has(chatId)) {
+				subscribers.delete(chatId);
+				saveSubscribers();
+			}
+			return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
+		}
+
 		if (text === "/web_app") {
 			return bot.sendMessage(chatId, `Собственно кнопка`, {
 				reply_markup: {
@@ -73,6 +114,15 @@ const startBot = async () => {
 		}
 	})
 };
+
+
+//subscribe message
+
+cron.schedule('27 14 * * *', () => {
+	subscribers.forEach(chatId => {
+		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
+	});
+});
 
 startBot();
 
