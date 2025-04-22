@@ -1,7 +1,6 @@
 require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
 const {againGameOptions} = require('./gameOptions');
-// const {commandsForBotMenu} = require('./comands');
 const {againGame} = require('./helpFunctions');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -40,8 +39,20 @@ const saveSubscribers = () => {
 // Инициализация подписчиков
 loadSubscribers();
 
+
+const mainMenu = {
+	reply_markup: {
+		keyboard: [
+			['ℹ️ Инфо', '👾 Играть'],
+			['🌐 Портфолио', '📢 Подписка'],
+			['❌ Отписка', '📤 Рассылка']
+		],
+		resize_keyboard: true,
+		one_time_keyboard: false
+	}
+};
+
 const startBot = async () => {
-	// await bot.setMyCommands(commandsForBotMenu);
 	bot.on('message', async msq => {
 		const text = msq.text;
 		const chatId = msq.chat.id;
@@ -84,22 +95,11 @@ const startBot = async () => {
 		if (text === "/start") {
 			console.log(userName);
 			const isAdmin = userName === ADMIN_USERNAME;
-			const keyboard = [
-				['/info', '/about_bot'],
-				['/web_app', '/game'],
-				['/subscribe', '/unsubscribe']
-			];
 			if (isAdmin) {
-				keyboard.push(['/send', '/subs']);
+				mainMenu.push(['/send', '/subs']);
 			}
 
-			return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, {
-				reply_markup: {
-					keyboard,
-					resize_keyboard: true,
-					one_time_keyboard: false
-				}
-			});
+			return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, mainMenu);
 		}
 
 		if (text === "/info") {
