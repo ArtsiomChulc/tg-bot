@@ -4,7 +4,7 @@ const commandsForBotMenu = [
     { command: '/about_bot', description: 'Что может этот бот?' },
     { command: '/subscribe', description: 'Подписаться на рассылку' },
     { command: '/unsubscribe', description: 'Отписаться от рассылки' },
-    { command: '/web_app', description: 'Жмякни и появится кнопочка' },
+    { command: '/web_app', description: 'Открывает мое портфолио' },
     { command: '/game', description: 'Попробуй отгадать число' },
 ]
 

@@ -15,7 +15,7 @@ const path = require('path');
 
 const chats = {};
 
-const web_app_url = 'https://www.youtube.com';
+const web_app_url = 'portfolio-chults.netlify.app';
 
 const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
 
@@ -110,10 +110,10 @@ const startBot = async () => {
 		}
 
 		if (text === "/web_app") {
-			return bot.sendMessage(chatId, `Собственно кнопка`, {
+			return bot.sendMessage(chatId, `Открыть портфолио`, {
 				reply_markup: {
 					inline_keyboard: [
-						[{ text: 'Открыть web_app', web_app: { url: web_app_url } }],
+						[{ text: 'Портфолио', web_app: { url: web_app_url } }],
 					]
 				}
 			});
