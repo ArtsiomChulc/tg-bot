@@ -51,13 +51,22 @@ const startBot = async () => {
 			pendingBroadcasts.delete(chatId);
 
 			// Если сообщение — это фото
-			if (msq.photo) {
+			if (msq.photo && msq.caption) {
 				const photo = msq.photo[msq.photo.length - 1].file_id;
-				const caption = msq.caption || "";
+				const caption = msq.caption;
 				for (let subscriberId of subscribers) {
 					await bot.sendPhoto(subscriberId, photo, { caption });
 				}
-				return bot.sendMessage(chatId, "✅ Фото-рассылка отправлена.");
+				return bot.sendMessage(chatId, "✅ Фото с подписью отправлено.");
+			}
+
+			// Если сообщение — это только фото (без подписи)
+			if (msq.photo && !msq.caption) {
+				const photo = msq.photo[msq.photo.length - 1].file_id;
+				for (let subscriberId of subscribers) {
+					await bot.sendPhoto(subscriberId, photo);
+				}
+				return bot.sendMessage(chatId, "✅ Фото без подписи отправлено.");
 			}
 
 			// Если сообщение — это текст
