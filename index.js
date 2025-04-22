@@ -175,11 +175,11 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('* * * * *', () => {
+cron.schedule('0 */2 * * *', () => {
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
-		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
+		bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка.');
 	});
 });
 
