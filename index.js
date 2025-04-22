@@ -15,7 +15,7 @@ const path = require('path');
 
 const chats = {};
 
-const web_app_url = 'portfolio-chults.netlify.app';
+const web_app_url = 'https://portfolio-chults.netlify.app';
 
 const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
 
@@ -113,7 +113,7 @@ const startBot = async () => {
 			return bot.sendMessage(chatId, `Открыть портфолио`, {
 				reply_markup: {
 					inline_keyboard: [
-						[{ text: 'Портфолио', web_app: { url: web_app_url } }],
+						[{ text: 'Портфолио 🌐', url: web_app_url }]
 					]
 				}
 			});
