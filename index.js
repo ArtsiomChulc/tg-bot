@@ -1,7 +1,7 @@
 require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
 const {againGameOptions} = require('./gameOptions');
-const {commandsForBotMenu} = require('./comands');
+// const {commandsForBotMenu} = require('./comands');
 const {againGame} = require('./helpFunctions');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -41,7 +41,7 @@ const saveSubscribers = () => {
 loadSubscribers();
 
 const startBot = async () => {
-	await bot.setMyCommands(commandsForBotMenu);
+	// await bot.setMyCommands(commandsForBotMenu);
 	bot.on('message', async msq => {
 		const text = msq.text;
 		const chatId = msq.chat.id;
@@ -83,8 +83,25 @@ const startBot = async () => {
 
 		if (text === "/start") {
 			console.log(userName);
-			return bot.sendMessage(chatId, `Привет! Пользуйся меню, чтобы узнать, что я умею.`);
+			const isAdmin = userName === ADMIN_USERNAME;
+			const keyboard = [
+				['/info', '/about_bot'],
+				['/web_app', '/game'],
+				['/subscribe', '/unsubscribe']
+			];
+			if (isAdmin) {
+				keyboard.push(['/send', '/subs']);
+			}
+
+			return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, {
+				reply_markup: {
+					keyboard,
+					resize_keyboard: true,
+					one_time_keyboard: false
+				}
+			});
 		}
+
 		if (text === "/info") {
 			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/a6f/1ae/a6f1ae15-7c57-3212-8269-f1a0231ad8c2/1.webp');
 			return bot.sendMessage(chatId, `Я буду называть тебя ${userName}`);
