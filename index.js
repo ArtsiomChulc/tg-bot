@@ -175,20 +175,12 @@ const startBot = async () => {
 
 //subscribe message
 
-// cron.schedule('0 */2 * * *', (msq) => {
-// 	console.log('Текущее время:', new Date());
-// 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
-// 	// subscribers.forEach(chatId => {
-// 		return bot.sendMessage(msq.message.chat.id, '👋 Это твоя автоматическая рассылка.');
-// 	// });
-// });
-
-cron.schedule('* * * * *', (msq) => {
+cron.schedule('0 */2 * * *', () => {
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
-	// subscribers.forEach(chatId => {
-	return bot.sendMessage(msq.message.chat.id, '👋 Это твоя автоматическая рассылка.');
-	// });
+	subscribers.forEach(chatId => {
+		bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка.');
+	});
 });
 
 startBot();
