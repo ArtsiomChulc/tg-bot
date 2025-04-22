@@ -49,13 +49,22 @@ const startBot = async () => {
 	bot.on('callback_query', async msq => {
 		const data = msq.data;
 		const chatId = msq.message.chat.id;
+
+		await bot.editMessageReplyMarkup(
+			{ inline_keyboard: [] },
+			{
+				chat_id: chatId,
+				message_id: msq.message.message_id,
+			}
+		);
+
 		if (data === '/again') {
 			return againGame(chatId, bot, chats)
 		}
 		console.log('data', data)
 		console.log('chats', chats[chatId])
 
-		if (data == chats[chatId]) {
+		if (data === chats[chatId]) {
 			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/9df/619/9df6199a-ff6a-338d-9f74-625b0a647045/1.webp');
 			return bot.sendMessage(chatId, `Поздравляю, ты отгадал цифру ${chats[chatId]}`, againGameOptions)
 		} else {
