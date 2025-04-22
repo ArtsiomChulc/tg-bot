@@ -113,8 +113,9 @@ const startBot = async () => {
 				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
 			}
 
-			const subscribers = getAllSubscribers();
+			const subscribers = await getAllSubscribers();
 			const count = subscribers.length;
+
 			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${subscribers}`);
 		}
 
