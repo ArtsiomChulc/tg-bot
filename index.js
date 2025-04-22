@@ -157,19 +157,17 @@ const startBot = async () => {
 			return bot.sendMessage(chatId, `К сожалению ты не угадал, бот загадал цифру ${chats[chatId]}`, againGameOptions)
 		}
 	})
-
-
-	//subscribe message
-
-	cron.schedule('0 */2 * * *', () => {
-		console.log('Текущее время:', new Date());
-		subscribers.forEach(chatId => {
-			bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
-		});
-	});
-
 };
 
+
+//subscribe message
+
+cron.schedule('* * * * *', () => {
+	console.log('Текущее время:', new Date());
+	subscribers.forEach(chatId => {
+		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
+	});
+});
 
 startBot();
 
