@@ -45,14 +45,13 @@ const getMainMenu = (isAdmin = false) => ({
 		keyboard: isAdmin
 			? [
 				['ℹ️ Инфо', '👾 Играть'],
-				['🌐 Портфолио', '📢 Подписка'],
-				['❌ Отписка'],
+				['🌐 Портфолио', '📢 Подписаться', '❌ Отписаться'],
 				['📤 Рассылка', 'Кол-во подписчиков']
 			]
 			: [
 				['ℹ️ Инфо', '👾 Играть'],
-				['🌐 Портфолио', '📢 Подписка'],
-				['❌ Отписка']
+				['🌐 Портфолио', '📢 Подписаться'],
+				['❌ Отписаться']
 			],
 		resize_keyboard: true,
 		one_time_keyboard: false
@@ -76,10 +75,8 @@ const startBot = async () => {
 			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/a6f/1ae/a6f1ae15-7c57-3212-8269-f1a0231ad8c2/1.webp');
 			return bot.sendMessage(chatId, `Я буду называть тебя ${userName}`);
 		}
-		if (text === "/about_bot") {
-			return bot.sendMessage(chatId, `Просто тестовый бот, который умеет загадывать число, открывать YouTube, делать рассылку`);
-		}
-		if (text === "📢 Подписка" || text === "/subscribe") {
+
+		if (text === "📢 Подписаться" || text === "/subscribe") {
 			if (!subscribers.has(String(chatId))) {
 				console.log(`ПОДПИСКА: Добавлен ${chatId}`);
 				subscribers.add(String(chatId));
@@ -88,7 +85,7 @@ const startBot = async () => {
 			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
 		}
 
-		if (text === "❌ Отписка" || text === "/unsubscribe") {
+		if (text === "❌ Отписаться" || text === "/unsubscribe") {
 			if (subscribers.has(String(chatId))) {
 				subscribers.delete(String(chatId));
 				saveSubscribers();
