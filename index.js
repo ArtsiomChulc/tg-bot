@@ -162,7 +162,7 @@ const startBot = async () => {
 		console.log('data', data)
 		console.log('chats', chats[chatId])
 
-		if (data === chats[chatId]) {
+		if (String(data) === String(chats[chatId])) {
 			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/9df/619/9df6199a-ff6a-338d-9f74-625b0a647045/1.webp');
 			return bot.sendMessage(chatId, `Поздравляю, ты отгадал цифру ${chats[chatId]}`, againGameOptions)
 		} else {
