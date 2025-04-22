@@ -126,7 +126,7 @@ const startBot = async () => {
 			// Если сообщение — это фото
 			if (msq.photo && msq.caption) {
 				const photo = msq.photo[msq.photo.length - 1].file_id;
-				const subscribers = getAllSubscribers();
+				const subscribers = await getAllSubscribers();
 				const caption = msq.caption;
 				for (let subscriberId of subscribers) {
 					await bot.sendPhoto(subscriberId, photo, { caption });
@@ -137,7 +137,7 @@ const startBot = async () => {
 			// Если сообщение — это только фото (без подписи)
 			if (msq.photo && !msq.caption) {
 				const photo = msq.photo[msq.photo.length - 1].file_id;
-				const subscribers = getAllSubscribers();
+				const subscribers = await getAllSubscribers();
 				for (let subscriberId of subscribers) {
 					await bot.sendPhoto(subscriberId, photo);
 				}
@@ -146,7 +146,7 @@ const startBot = async () => {
 
 			// Если сообщение — это текст
 			if (text) {
-				const subscribers = getAllSubscribers();
+				const subscribers = await getAllSubscribers();
 				for (let subscriberId of subscribers) {
 					await bot.sendMessage(subscriberId, `📢 Рассылка: ${text}`);
 				}
@@ -190,8 +190,8 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('30 8 * * *', () => {
-	const subscribers = getAllSubscribers();
+cron.schedule('38 23 * * *', async () => {
+	const subscribers = await getAllSubscribers();
 	console.log('Текущее время:', new Date());
 	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
