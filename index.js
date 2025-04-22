@@ -138,7 +138,7 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('27 14 * * *', () => {
+cron.schedule('46 14 * * *', () => {
 	subscribers.forEach(chatId => {
 		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
 	});
