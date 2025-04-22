@@ -115,8 +115,9 @@ const startBot = async () => {
 
 			const subscribers = await getAllSubscribers();
 			const count = subscribers.length;
+			const ids = subscribers.join('\n');
 
-			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${subscribers}`);
+			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${ids}`);
 		}
 
 		if (pendingBroadcasts.has(chatId)) {
