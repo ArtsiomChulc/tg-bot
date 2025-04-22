@@ -40,23 +40,93 @@ const saveSubscribers = () => {
 loadSubscribers();
 
 
-const mainMenu = {
+const getMainMenu = (isAdmin = false) => ({
 	reply_markup: {
-		keyboard: [
-			['ℹ️ Инфо', '👾 Играть'],
-			['🌐 Портфолио', '📢 Подписка'],
-			['❌ Отписка', '📤 Рассылка']
-		],
+		keyboard: isAdmin
+			? [
+				['ℹ️ Инфо', '👾 Играть'],
+				['🌐 Портфолио', '📢 Подписка'],
+				['❌ Отписка'],
+				['📤 Рассылка', 'Кол-во подписчиков']
+			]
+			: [
+				['ℹ️ Инфо', '👾 Играть'],
+				['🌐 Портфолио', '📢 Подписка'],
+				['❌ Отписка']
+			],
 		resize_keyboard: true,
 		one_time_keyboard: false
 	}
-};
+});
 
 const startBot = async () => {
 	bot.on('message', async msq => {
 		const text = msq.text;
 		const chatId = msq.chat.id;
 		const userName = msq.from.username;
+
+		if (text === "/start") {
+			console.log(userName);
+			const isAdmin = userName === ADMIN_USERNAME;
+
+			return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, getMainMenu(isAdmin));
+		}
+
+		if (text === 'ℹ️ Инфо' || text === "/info") {
+			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/a6f/1ae/a6f1ae15-7c57-3212-8269-f1a0231ad8c2/1.webp');
+			return bot.sendMessage(chatId, `Я буду называть тебя ${userName}`);
+		}
+		if (text === "/about_bot") {
+			return bot.sendMessage(chatId, `Просто тестовый бот, который умеет загадывать число, открывать YouTube, делать рассылку`);
+		}
+		if (text === "📢 Подписка" || text === "/subscribe") {
+			if (!subscribers.has(String(chatId))) {
+				console.log(`ПОДПИСКА: Добавлен ${chatId}`);
+				subscribers.add(String(chatId));
+				saveSubscribers();
+			}
+			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
+		}
+
+		if (text === "❌ Отписка" || text === "/unsubscribe") {
+			if (subscribers.has(String(chatId))) {
+				subscribers.delete(String(chatId));
+				saveSubscribers();
+			}
+			return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
+		}
+
+		if (text === '🌐 Портфолио' || text === "/web_app") {
+			return bot.sendMessage(chatId, `Открыть портфолио`, {
+				reply_markup: {
+					inline_keyboard: [
+						[{ text: 'Портфолио 🌐', url: web_app_url }]
+					]
+				}
+			});
+		}
+		if (text === '👾 Играть' || text === "/game") {
+			return againGame(chatId, bot, chats)
+		}
+		if (text === '📤 Рассылка' || text === "/send") {
+			if (userName !== ADMIN_USERNAME) {
+				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+			}
+			pendingBroadcasts.set(chatId, true);
+			return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
+		}
+
+		if (text === 'Кол-во подписчиков' || text === '/subs') {
+			if (userName !== ADMIN_USERNAME) {
+				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+			}
+
+			const ids = [...subscribers];
+			const count = ids.length;
+			const list = ids.join('\n');
+
+			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${list}`);
+		}
 
 		if (pendingBroadcasts.has(chatId)) {
 			pendingBroadcasts.delete(chatId);
@@ -88,74 +158,7 @@ const startBot = async () => {
 				return bot.sendMessage(chatId, "✅ Текстовая рассылка отправлена.");
 			}
 
-			return bot.sendMessage(chatId, "⚠️ Поддерживается только текст и фото с подписью.");
-		}
-
-
-		if (text === "/start") {
-			console.log(userName);
-			const isAdmin = userName === ADMIN_USERNAME;
-			if (isAdmin) {
-				mainMenu.push(['/send', '/subs']);
-			}
-
-			return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, mainMenu);
-		}
-
-		if (text === "/info") {
-			await bot.sendSticker(chatId, 'https://tlgrm.ru/_/stickers/a6f/1ae/a6f1ae15-7c57-3212-8269-f1a0231ad8c2/1.webp');
-			return bot.sendMessage(chatId, `Я буду называть тебя ${userName}`);
-		}
-		if (text === "/about_bot") {
-			return bot.sendMessage(chatId, `Просто тестовый бот, который умеет загадывать число, открывать YouTube, делать рассылку`);
-		}
-		if (text === '/subscribe') {
-			if (!subscribers.has(chatId)) {
-				console.log(`ПОДПИСКА: Добавлен ${chatId}`);
-				subscribers.add(String(chatId));
-				saveSubscribers();
-			}
-			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
-		}
-
-		if (text === '/unsubscribe') {
-			if (subscribers.has(chatId)) {
-				subscribers.delete(chatId);
-				saveSubscribers();
-			}
-			return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
-		}
-
-		if (text === "/web_app") {
-			return bot.sendMessage(chatId, `Открыть портфолио`, {
-				reply_markup: {
-					inline_keyboard: [
-						[{ text: 'Портфолио 🌐', url: web_app_url }]
-					]
-				}
-			});
-		}
-		if (text === "/game") {
-			return againGame(chatId, bot, chats)
-		}
-		if (text === "/send") {
-			if (userName !== ADMIN_USERNAME) {
-				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
-			}
-			pendingBroadcasts.set(chatId, true);
-			return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
-		}
-
-		if (text === '/subs') {
-			if (userName !== ADMIN_USERNAME) {
-				return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
-			}
-
-			const ids = [...subscribers];
-			const count = ids.length;
-			const list = ids.join('\n');
-
-			return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${list}`);
+			return bot.sendMessage(chatId, "⚠️ Поддерживается только текст и фото (с подписью или без).");
 		}
 
 		return bot.sendMessage(chatId, `Уупс, я тебя не понимаю...`);
