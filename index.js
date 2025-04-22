@@ -27,7 +27,7 @@ const pendingBroadcasts = new Map(); // временное хранилище р
 const loadSubscribers = () => {
 	try {
 		const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
-		subscribers = new Set(JSON.parse(data));
+		subscribers = new Set(JSON.parse(data).map(id => String(id)));
 	} catch (e) {
 		subscribers = new Set(); // файл еще не создан
 	}
@@ -94,7 +94,8 @@ const startBot = async () => {
 		}
 		if (text === '/subscribe') {
 			if (!subscribers.has(chatId)) {
-				subscribers.add(chatId);
+				console.log(`ПОДПИСКА: Добавлен ${chatId}`);
+				subscribers.add(String(chatId));
 				saveSubscribers();
 			}
 			return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
@@ -176,6 +177,7 @@ const startBot = async () => {
 
 cron.schedule('* * * * *', () => {
 	console.log('Текущее время:', new Date());
+	console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
 	subscribers.forEach(chatId => {
 		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
 	});
