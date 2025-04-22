@@ -196,7 +196,7 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('38 23 * * *', async () => {
+cron.schedule('30 8 * * *', async () => {
     const subscribers = await getAllSubscribers();
     console.log('Текущее время:', new Date());
     console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
