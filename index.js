@@ -162,7 +162,8 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('46 14 * * *', () => {
+cron.schedule('* * * * *', () => {
+	console.log('Текущее время:', new Date());
 	subscribers.forEach(chatId => {
 		bot.sendMessage(chatId, '👋 Доброе утро! Это твоя автоматическая рассылка.');
 	});
