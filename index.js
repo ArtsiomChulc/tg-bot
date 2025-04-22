@@ -48,12 +48,27 @@ const startBot = async () => {
 		const userName = msq.from.username;
 
 		if (pendingBroadcasts.has(chatId)) {
-			const messageToSend = text;
 			pendingBroadcasts.delete(chatId);
-			for (let subscriberId of subscribers) {
-				await bot.sendMessage(subscriberId, `📢 Рассылка: ${messageToSend}`);
+
+			// Если сообщение — это фото
+			if (msq.photo) {
+				const photo = msq.photo[msq.photo.length - 1].file_id;
+				const caption = msq.caption || "";
+				for (let subscriberId of subscribers) {
+					await bot.sendPhoto(subscriberId, photo, { caption });
+				}
+				return bot.sendMessage(chatId, "✅ Фото-рассылка отправлена.");
 			}
-			return bot.sendMessage(chatId, "✅ Рассылка отправлена.");
+
+			// Если сообщение — это текст
+			if (text) {
+				for (let subscriberId of subscribers) {
+					await bot.sendMessage(subscriberId, `📢 Рассылка: ${text}`);
+				}
+				return bot.sendMessage(chatId, "✅ Текстовая рассылка отправлена.");
+			}
+
+			return bot.sendMessage(chatId, "⚠️ Поддерживается только текст и фото с подписью.");
 		}
 
 
