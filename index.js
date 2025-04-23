@@ -4,51 +4,28 @@ const {againGameOptions} = require('./gameOptions');
 const {againGame} = require('./helpFunctions');
 const cron = require('node-cron');
 const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./subscribers');
+const { saveAutoMessage, getLastAutoMessage } = require('./autoMessages');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 
 const bot = new telegramApi(token, {polling: true});
 
-// const fs = require('fs');
-
-// const path = require('path');
-
 const chats = {};
 
-const web_app_url = 'https://portfolio-chults.netlify.app';
+const web_app_url = process.env.MY_APP;
 
-// const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.js');
-//
-// // Загружаем подписчиков из файла
-// let subscribers = new Set();
-//
 const pendingBroadcasts = new Map(); // временное хранилище рассылки от админа
-//
-// const loadSubscribers = () => {
-// 	try {
-// 		const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
-// 		subscribers = new Set(JSON.parse(data).map(id => String(id)));
-// 	} catch (e) {
-// 		subscribers = new Set(); // файл еще не создан
-// 	}
-// };
-//
-// const saveSubscribers = () => {
-// 	fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify([...subscribers]));
-// };
-//
-// // Инициализация подписчиков
-// loadSubscribers();
-
+const pendingAutoBroadcasts = new Map(); // временное хранилище авто рассылки от админа
 
 const getMainMenu = (isAdmin = false) => ({
     reply_markup: {
         keyboard: isAdmin
             ? [
                 ['ℹ️ Инфо', '👾 Играть'],
-                ['🌐 Портфолио', '📢 Подписаться', '❌ Отписаться'],
-                ['📤 Рассылка', '📊 Кол-во подписчиков']
+                ['🌐 Портфолио', '📢 Подписаться'],
+                ['📤 Рассылка', '📊 Кол-во подписчиков'],
+                ['🛠 Создать авторассылку']
             ]
             : [
                 ['ℹ️ Инфо', '👾 Играть'],
@@ -126,8 +103,16 @@ const startBot = async () => {
             return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${ids}`);
         }
 
-        if (pendingBroadcasts.has(chatId)) {
-            pendingBroadcasts.delete(chatId);
+        if (text === '🛠 Создать авторассылку') {
+            if (userName !== ADMIN_USERNAME) {
+                return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+            }
+            pendingAutoBroadcasts.set(chatId, true); // флаг для авторассылки
+            return bot.sendMessage(chatId, "✍️ Напиши текст или пришли фото с подписью для авторассылки:");
+        }
+
+        if (pendingAutoBroadcasts.has(chatId)) {
+            pendingAutoBroadcasts.delete(chatId);
 
             // Если сообщение — это фото
             if (msq.photo && msq.caption) {
@@ -136,6 +121,7 @@ const startBot = async () => {
                 const caption = msq.caption;
                 for (let subscriberId of subscribers) {
                     await bot.sendPhoto(subscriberId, photo, {caption});
+                    await saveAutoMessage({type: 'photo', content: photo, caption: caption});
                 }
                 return bot.sendMessage(chatId, "✅ Фото с подписью отправлено.");
             }
@@ -145,6 +131,7 @@ const startBot = async () => {
                 const photo = msq.photo[msq.photo.length - 1].file_id;
                 const subscribers = await getAllSubscribers();
                 for (let subscriberId of subscribers) {
+                    await saveAutoMessage({type: 'photo', content: photo, caption: msq.photo});
                     await bot.sendPhoto(subscriberId, photo);
                 }
                 return bot.sendMessage(chatId, "✅ Фото без подписи отправлено.");
@@ -155,11 +142,35 @@ const startBot = async () => {
                 const subscribers = await getAllSubscribers();
                 for (let subscriberId of subscribers) {
                     await bot.sendMessage(subscriberId, `📢 Рассылка: ${text}`);
+                    await saveAutoMessage({type: 'text', content: text});
                 }
                 return bot.sendMessage(chatId, "✅ Текстовая рассылка отправлена.");
             }
 
             return bot.sendMessage(chatId, "⚠️ Поддерживается только текст и фото (с подписью или без).");
+        }
+
+        if (pendingAutoBroadcasts.get(chatId) === 'auto') {
+            pendingAutoBroadcasts.delete(chatId);
+
+            if (msq.photo && msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                await saveAutoMessage({ type: 'photo', content: photo, caption: msq.caption });
+                return bot.sendMessage(chatId, "✅ Фото с подписью сохранено для авторассылки.");
+            }
+
+            if (msq.photo && !msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                await saveAutoMessage({ type: 'photo', content: photo });
+                return bot.sendMessage(chatId, "✅ Фото без подписи сохранено для авторассылки.");
+            }
+
+            if (text) {
+                await saveAutoMessage({ type: 'text', content: text });
+                return bot.sendMessage(chatId, "✅ Текстовое сообщение сохранено для авторассылки.");
+            }
+
+            return bot.sendMessage(chatId, "⚠️ Поддерживается только текст или фото (с подписью или без).");
         }
 
         return bot.sendMessage(chatId, `Уупс, я тебя не понимаю...`);
@@ -197,12 +208,29 @@ const startBot = async () => {
 //subscribe message
 
 cron.schedule('30 8 * * *', async () => {
-    const subscribers = await getAllSubscribers();
-    console.log('Текущее время:', new Date());
-    console.log('⏰ Рассылка запущена. Подписчики:', [...subscribers]);
-    subscribers.forEach(chatId => {
-        return bot.sendMessage(chatId, '👋 Это твоя автоматическая рассылка. Пока содержимое рассылки находится в разработке');
-    });
+    try {
+        const subscribers = await getAllSubscribers();
+        const message = await getLastAutoMessage();
+
+        if (!message) {
+            console.log("📭 Нет авторассылок для отправки");
+            return;
+        }
+
+        for (let chatId of subscribers) {
+            if (message.type === 'text') {
+                await bot.sendMessage(chatId, `📢 ${message.content}`);
+            } else if (message.type === 'photo') {
+                await bot.sendPhoto(chatId, message.content, {
+                    caption: message.caption || undefined
+                });
+            }
+        }
+
+        console.log("✅ Авторассылка успешно отправлена:", message);
+    } catch (err) {
+        console.error("❌ Ошибка авторассылки:", err);
+    }
 }, {
     timezone: "Europe/Moscow"
 });

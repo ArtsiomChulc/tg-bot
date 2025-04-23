@@ -10,10 +10,13 @@
   "author": "Chults_Artsiom",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^0.9.0",
+    "cohere-ai": "^7.17.1",
     "dotenv": "^16.4.5",
     "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0",
     "nodemon": "^3.1.5",
+    "openai": "^4.95.1",
     "pg": "^8.15.0"
   }
 }
