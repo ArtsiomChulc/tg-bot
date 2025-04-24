@@ -1,10 +1,10 @@
 require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
-const {againGameOptions} = require('./helpers/gameOptions');
-const {againGame, getMainMenu, handleBroadcast, formatCronTime} = require('./helpers/helpFunctions');
-const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./db/subscribers');
-const {deleteAllAutoMessages} = require('./helpers/autoMessages');
-const {setAutoBroadcastTime, scheduleAutoBroadcast} = require("./helpers/scheduleAutoBroadcast");
+const {againGameOptions} = require('./gameOptions');
+const {againGame} = require('./helpFunctions');
+const cron = require('node-cron');
+const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./subscribers');
+const { saveAutoMessage, getLastAutoMessage } = require('./autoMessages');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
@@ -13,24 +13,36 @@ const bot = new telegramApi(token, {polling: true});
 
 const chats = {};
 
-let pendingAutoTime;
-
 const web_app_url = process.env.MY_APP;
 
 const pendingBroadcasts = new Map(); // временное хранилище рассылки от админа
 const pendingAutoBroadcasts = new Map(); // временное хранилище авто рассылки от админа
 
-const startBot = async () => {
+const getMainMenu = (isAdmin = false) => ({
+    reply_markup: {
+        keyboard: isAdmin
+            ? [
+                ['ℹ️ Инфо', '👾 Играть'],
+                ['🌐 Портфолио', '📢 Подписаться'],
+                ['📤 Рассылка', '📊 Кол-во подписчиков'],
+                ['🛠 Создать авторассылку']
+            ]
+            : [
+                ['ℹ️ Инфо', '👾 Играть'],
+                ['🌐 Портфолио', '📢 Подписаться'],
+                ['❌ Отписаться', '🆘 Помощь']
+            ],
+        resize_keyboard: true,
+        one_time_keyboard: false
+    }
+});
 
+
+const startBot = async () => {
     bot.on('message', async msq => {
         const text = msq.text;
         const chatId = msq.chat.id;
         const userName = msq.from.username;
-
-        if (!text) {
-            console.error("Получено пустое сообщение от пользователя.");
-            return;
-        }
 
         if (text === "/start") {
             console.log(userName);
@@ -44,38 +56,39 @@ const startBot = async () => {
             return bot.sendMessage(chatId, `Ну смотри ${userName || 'пользователь'}! Бот умеет играть, подписывать/отписывать от уведомлений и показывать мое портфолио`);
         }
 
-        if (text === '👾 Играть' || text === "/game") {
-            return againGame(chatId, bot, chats)
-        }
-
-        if (text === '🌐 Портфолио' || text === "/web_app") {
-            return bot.sendMessage(chatId, web_app_url);
-        }
-
         if (text === "📢 Подписаться" || text === "/subscribe") {
-            await addSubscriber(chatId, userName);
+            await addSubscriber(chatId);
             return bot.sendMessage(chatId, '✅ Вы подписались на рассылку.');
         }
 
+        if (text === "❌ Отписаться" || text === "/unsubscribe") {
+            await removeSubscriber(chatId);
+            return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
+        }
+
+        if (text === '🌐 Портфолио' || text === "/web_app") {
+            return bot.sendMessage(chatId, `Открыть портфолио`, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{text: 'Портфолио 🌐', url: web_app_url}]
+                    ]
+                }
+            });
+        }
+
+        if (text === '🆘 Помощь' || text === "/help") {
+            return bot.sendMessage(chatId, 'Если что-то пошло не так, отправь боту команду /start');
+        }
+
+        if (text === '👾 Играть' || text === "/game") {
+            return againGame(chatId, bot, chats)
+        }
         if (text === '📤 Рассылка' || text === "/send") {
             if (userName !== ADMIN_USERNAME) {
                 return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
             }
             pendingBroadcasts.set(chatId, true);
             return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
-        }
-
-        if (text === '🛠 Создать авторассылку') {
-            if (userName !== ADMIN_USERNAME) {
-                return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
-            }
-            pendingAutoBroadcasts.set(chatId, true); // флаг для авторассылки
-            return bot.sendMessage(chatId, "✍️ Напиши текст или пришли фото с подписью для авторассылки:");
-        }
-
-        if (text === '🛠 Удалить все из авторассылки' || text === "/delete") {
-            await deleteAllAutoMessages();
-            return bot.sendMessage(chatId, '✅ Вы удалили все из авторассылки.');
         }
 
         if (text === '📊 Кол-во подписчиков' || text === '/subs') {
@@ -90,58 +103,74 @@ const startBot = async () => {
             return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${ids}`);
         }
 
-        if (text === "❌ Отписаться" || text === "/unsubscribe") {
-            await removeSubscriber(chatId);
-            return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
-        }
-
-        if (text === '⏰ Установить время' || text === '/set_autotime') {
+        if (text === '🛠 Создать авторассылку') {
             if (userName !== ADMIN_USERNAME) {
                 return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
             }
-            pendingAutoTime = chatId;
-            return bot.sendMessage(chatId, "⏰ Введите время авторассылки в формате cron (например, `0 9 * * *` для 09:00 утра):");
-        }
-
-        if (pendingAutoTime === chatId) {
-            const newTime = text.trim();
-
-            if (!/^\s*[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s*$/.test(newTime)) {
-                return bot.sendMessage(chatId, "⚠️ Неверный формат cron. Пример: `0 9 * * *`");
-            }
-
-            setAutoBroadcastTime(newTime);
-            scheduleAutoBroadcast(bot);
-            pendingAutoTime = null;
-
-            return bot.sendMessage(chatId, `✅ Время авторассылки обновлено: ${formatCronTime(newTime)}`);
-        }
-
-        if (text === '🆘 Помощь' || text === "/help") {
-            return bot.sendMessage(chatId, 'Если что-то пошло не так, отправь боту команду /start');
+            pendingAutoBroadcasts.set(chatId, true); // флаг для авторассылки
+            return bot.sendMessage(chatId, "✍️ Напиши текст или пришли фото с подписью для авторассылки:");
         }
 
         if (pendingAutoBroadcasts.has(chatId)) {
             pendingAutoBroadcasts.delete(chatId);
-            return handleBroadcast(bot, chatId, msq, true);
+
+            // Если сообщение — это фото
+            if (msq.photo && msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                const subscribers = await getAllSubscribers();
+                const caption = msq.caption;
+                for (let subscriberId of subscribers) {
+                    await bot.sendPhoto(subscriberId, photo, {caption});
+                    await saveAutoMessage({type: 'photo', content: photo, caption: caption});
+                }
+                return bot.sendMessage(chatId, "✅ Фото с подписью отправлено.");
+            }
+
+            // Если сообщение — это только фото (без подписи)
+            if (msq.photo && !msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                const subscribers = await getAllSubscribers();
+                for (let subscriberId of subscribers) {
+                    await saveAutoMessage({type: 'photo', content: photo, caption: msq.photo});
+                    await bot.sendPhoto(subscriberId, photo);
+                }
+                return bot.sendMessage(chatId, "✅ Фото без подписи отправлено.");
+            }
+
+            // Если сообщение — это текст
+            if (text) {
+                const subscribers = await getAllSubscribers();
+                for (let subscriberId of subscribers) {
+                    await bot.sendMessage(subscriberId, `📢 Рассылка: ${text}`);
+                    await saveAutoMessage({type: 'text', content: text});
+                }
+                return bot.sendMessage(chatId, "✅ Текстовая рассылка отправлена.");
+            }
+
+            return bot.sendMessage(chatId, "⚠️ Поддерживается только текст и фото (с подписью или без).");
         }
 
-        if (pendingBroadcasts.has(chatId)) {
-            pendingBroadcasts.delete(chatId);
-            return handleBroadcast(bot, chatId, msq, false);
-        }
+        if (pendingAutoBroadcasts.get(chatId) === 'auto') {
+            pendingAutoBroadcasts.delete(chatId);
 
-        if(text === '⏰ Памятка CRON' || '/cron_help') {
-            return bot.sendMessage(chatId, '* * * * * \n' +
-                '│ │ │ │ │\n' +
-                '│ │ │ │ └── День недели (0 - 7) (0 и 7 = воскресенье)\n' +
-                '│ │ │ └──── Месяц (1 - 12)\n' +
-                '│ │ └────── День месяца (1 - 31)\n' +
-                '│ └──────── Часы (0 - 23)\n' +
-                '└────────── Минуты (0 - 59)\n' +
-                '*/30 * * * * каждые полчаса\n' +
-                '0 * * * * каждый час в начале часа'
-            )
+            if (msq.photo && msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                await saveAutoMessage({ type: 'photo', content: photo, caption: msq.caption });
+                return bot.sendMessage(chatId, "✅ Фото с подписью сохранено для авторассылки.");
+            }
+
+            if (msq.photo && !msq.caption) {
+                const photo = msq.photo[msq.photo.length - 1].file_id;
+                await saveAutoMessage({ type: 'photo', content: photo });
+                return bot.sendMessage(chatId, "✅ Фото без подписи сохранено для авторассылки.");
+            }
+
+            if (text) {
+                await saveAutoMessage({ type: 'text', content: text });
+                return bot.sendMessage(chatId, "✅ Текстовое сообщение сохранено для авторассылки.");
+            }
+
+            return bot.sendMessage(chatId, "⚠️ Поддерживается только текст или фото (с подписью или без).");
         }
 
         return bot.sendMessage(chatId, `Уупс, я тебя не понимаю...`);
@@ -150,11 +179,6 @@ const startBot = async () => {
     bot.on('callback_query', async msq => {
         const data = msq.data;
         const chatId = msq.message.chat.id;
-
-        if (!data) {
-            console.error("Получены пустые данные в колбек-запросе.");
-            return;
-        }
 
         await bot.editMessageReplyMarkup(
             {inline_keyboard: []},
@@ -181,8 +205,35 @@ const startBot = async () => {
 };
 
 
-startBot().then(() => {
-    // scheduleAutoBroadcast(bot);
-    console.log('Bot started!');
+//subscribe message
+
+cron.schedule('30 8 * * *', async () => {
+    try {
+        const subscribers = await getAllSubscribers();
+        const message = await getLastAutoMessage();
+
+        if (!message) {
+            console.log("📭 Нет авторассылок для отправки");
+            return;
+        }
+
+        for (let chatId of subscribers) {
+            if (message.type === 'text') {
+                await bot.sendMessage(chatId, `📢 ${message.content}`);
+            } else if (message.type === 'photo') {
+                await bot.sendPhoto(chatId, message.content, {
+                    caption: message.caption || undefined
+                });
+            }
+        }
+
+        console.log("✅ Авторассылка успешно отправлена:", message);
+    } catch (err) {
+        console.error("❌ Ошибка авторассылки:", err);
+    }
+}, {
+    timezone: "Europe/Moscow"
 });
+
+startBot();
 
