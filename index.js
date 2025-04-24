@@ -45,13 +45,7 @@ const startBot = async () => {
         }
 
         if (text === '🌐 Портфолио' || text === "/web_app") {
-            return bot.sendMessage(chatId, `Открыть портфолио`, {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{text: 'Портфолио 🌐', callback_data: web_app_url}]
-                    ]
-                }
-            });
+            return bot.sendMessage(chatId, `Ссылка на мое портфолио: ${web_app_url}`);
         }
 
         if (text === "📢 Подписаться" || text === "/subscribe") {
