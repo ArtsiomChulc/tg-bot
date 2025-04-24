@@ -2,9 +2,8 @@ require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
 const {againGameOptions} = require('./helpers/gameOptions');
 const {againGame, getMainMenu, handleBroadcast, formatCronTime} = require('./helpers/helpFunctions');
-const cron = require('node-cron');
 const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./db/subscribers');
-const { saveAutoMessage, getLastAutoMessage, deleteAllAutoMessages} = require('./helpers/autoMessages');
+const {deleteAllAutoMessages} = require('./helpers/autoMessages');
 const {setAutoBroadcastTime, scheduleAutoBroadcast} = require("./helpers/scheduleAutoBroadcast");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -46,18 +45,14 @@ const startBot = async () => {
         }
 
         if (text === '🌐 Портфолио' || text === "/web_app") {
-            return bot.sendMessage(chatId, web_app_url);
+            return bot.sendMessage(chatId, `Открыть портфолио`, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{text: 'Портфолио 🌐', url: web_app_url}]
+                    ]
+                }
+            });
         }
-
-        // if (text === '🌐 Портфолио' || text === "/web_app") {
-        //     return bot.sendMessage(chatId, `Открыть портфолио`, {
-        //         reply_markup: {
-        //             inline_keyboard: [
-        //                 [{text: 'Портфолио 🌐', url: web_app_url}]
-        //             ]
-        //         }
-        //     });
-        // }
 
         if (text === "📢 Подписаться" || text === "/subscribe") {
             await addSubscriber(chatId, userName);
