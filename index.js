@@ -107,7 +107,7 @@ const startBot = async () => {
         if (pendingAutoTime === chatId) {
             const newTime = text.trim();
 
-            if (!/^\s*[\d\*\/,\-]+\s+[\d\*\/,\-]+\s+[\d\*\/,\-]+\s+[\d\*\/,\-]+\s+[\d\*\/,\-]+\s*$/.test(newTime)) {
+            if (!/^\s*[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s*$/.test(newTime)) {
                 return bot.sendMessage(chatId, "⚠️ Неверный формат cron. Пример: `0 9 * * *`");
             }
 
