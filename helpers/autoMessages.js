@@ -1,4 +1,4 @@
-const pool = require('./db');
+const pool = require('../db/db');
 
 async function saveAutoMessage({ type, content, caption = null }) {
     await pool.query(
@@ -17,7 +17,15 @@ async function getLastAutoMessage() {
     return res.rows[0];
 }
 
+async function deleteAllAutoMessages() {
+    await pool.query(
+        `DELETE FROM auto_messages`
+    )
+    console.log('DB cleaned')
+}
+
 module.exports = {
     saveAutoMessage,
     getLastAutoMessage,
+    deleteAllAutoMessages
 };

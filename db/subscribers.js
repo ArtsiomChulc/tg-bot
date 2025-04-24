@@ -1,10 +1,10 @@
 const pool = require('./db');
 
 // Добавить
-async function addSubscriber(chatId) {
+async function addSubscriber(chatId, userName) {
     await pool.query(
-        'INSERT INTO subscribers (chat_id) VALUES ($1) ON CONFLICT DO NOTHING',
-        [String(chatId)]
+        'INSERT INTO subscribers (chat_id, userName) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [String(chatId), userName]
     );
 }
 
