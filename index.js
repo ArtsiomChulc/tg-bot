@@ -27,6 +27,11 @@ const startBot = async () => {
         const chatId = msq.chat.id;
         const userName = msq.from.username;
 
+        if (!text) {
+            console.error("Получено пустое сообщение от пользователя.");
+            return;
+        }
+
         if (text === "/start") {
             console.log(userName);
             const isAdmin = userName === ADMIN_USERNAME;
@@ -145,6 +150,11 @@ const startBot = async () => {
     bot.on('callback_query', async msq => {
         const data = msq.data;
         const chatId = msq.message.chat.id;
+
+        if (!data) {
+            console.error("Получены пустые данные в колбек-запросе.");
+            return;
+        }
 
         await bot.editMessageReplyMarkup(
             {inline_keyboard: []},
