@@ -1,11 +1,10 @@
 require('dotenv').config();
 const telegramApi = require('node-telegram-bot-api');
-const {againGameOptions} = require('./gameOptions');
-const {againGame} = require('./helpFunctions');
 const cron = require('node-cron');
-const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./subscribers');
-const { saveAutoMessage, getLastAutoMessage } = require('./autoMessages');
-const {getMainMenu} = require("./helpers/helpFunctions");
+const {getMainMenu, againGame} = require("./helpers/helpFunctions");
+const {removeSubscriber, addSubscriber, getAllSubscribers} = require("./db/subscribers");
+const {saveAutoMessage, getLastAutoMessage} = require("./helpers/autoMessages");
+const {againGameOptions} = require("./helpers/gameOptions");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
