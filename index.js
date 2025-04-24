@@ -28,7 +28,8 @@ const startBot = async () => {
             console.log(userName);
             const isAdmin = userName === ADMIN_USERNAME;
 
-            return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, getMainMenu(isAdmin));
+            return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`);
+            // return bot.sendMessage(chatId, `Привет, ${userName || 'пользователь'}! Вот что я умею:`, getMainMenu(isAdmin));
         }
 
         if (text === 'ℹ️ Инфо' || text === "/info") {
@@ -60,16 +61,16 @@ const startBot = async () => {
             return bot.sendMessage(chatId, 'Если что-то пошло не так, отправь боту команду /start');
         }
 
-        if (text === '👾 Играть' || text === "/game") {
-            return againGame(chatId, bot, chats)
-        }
-        if (text === '📤 Рассылка' || text === "/send") {
-            if (userName !== ADMIN_USERNAME) {
-                return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
-            }
-            pendingBroadcasts.set(chatId, true);
-            return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
-        }
+        // if (text === '👾 Играть' || text === "/game") {
+        //     return againGame(chatId, bot, chats)
+        // }
+        // if (text === '📤 Рассылка' || text === "/send") {
+        //     if (userName !== ADMIN_USERNAME) {
+        //         return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+        //     }
+        //     pendingBroadcasts.set(chatId, true);
+        //     return bot.sendMessage(chatId, "✍️ Напиши сообщение, которое хочешь отправить всем подписчикам:");
+        // }
 
         if (text === '📊 Кол-во подписчиков' || text === '/subs') {
             if (userName !== ADMIN_USERNAME) {
@@ -83,13 +84,13 @@ const startBot = async () => {
             return bot.sendMessage(chatId, `👥 Подписчиков: ${count}\n\nID:\n${ids}`);
         }
 
-        if (text === '🛠 Создать авторассылку') {
-            if (userName !== ADMIN_USERNAME) {
-                return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
-            }
-            pendingAutoBroadcasts.set(chatId, true); // флаг для авторассылки
-            return bot.sendMessage(chatId, "✍️ Напиши текст или пришли фото с подписью для авторассылки:");
-        }
+        // if (text === '🛠 Создать авторассылку') {
+        //     if (userName !== ADMIN_USERNAME) {
+        //         return bot.sendMessage(chatId, "❌ У тебя нет доступа к этой команде.");
+        //     }
+        //     pendingAutoBroadcasts.set(chatId, true); // флаг для авторассылки
+        //     return bot.sendMessage(chatId, "✍️ Напиши текст или пришли фото с подписью для авторассылки:");
+        // }
 
         if (pendingAutoBroadcasts.has(chatId)) {
             pendingAutoBroadcasts.delete(chatId);
@@ -160,13 +161,13 @@ const startBot = async () => {
         const data = msq.data;
         const chatId = msq.message.chat.id;
 
-        await bot.editMessageReplyMarkup(
-            {inline_keyboard: []},
-            {
-                chat_id: chatId,
-                message_id: msq.message.message_id,
-            }
-        );
+        // await bot.editMessageReplyMarkup(
+        //     {inline_keyboard: []},
+        //     {
+        //         chat_id: chatId,
+        //         message_id: msq.message.message_id,
+        //     }
+        // );
 
         if (data === '/again') {
             return againGame(chatId, bot, chats)
@@ -187,33 +188,33 @@ const startBot = async () => {
 
 //subscribe message
 
-cron.schedule('30 8 * * *', async () => {
-    try {
-        const subscribers = await getAllSubscribers();
-        const message = await getLastAutoMessage();
-
-        if (!message) {
-            console.log("📭 Нет авторассылок для отправки");
-            return;
-        }
-
-        for (let chatId of subscribers) {
-            if (message.type === 'text') {
-                await bot.sendMessage(chatId, `📢 ${message.content}`);
-            } else if (message.type === 'photo') {
-                await bot.sendPhoto(chatId, message.content, {
-                    caption: message.caption || undefined
-                });
-            }
-        }
-
-        console.log("✅ Авторассылка успешно отправлена:", message);
-    } catch (err) {
-        console.error("❌ Ошибка авторассылки:", err);
-    }
-}, {
-    timezone: "Europe/Moscow"
-});
+// cron.schedule('30 8 * * *', async () => {
+//     try {
+//         const subscribers = await getAllSubscribers();
+//         const message = await getLastAutoMessage();
+//
+//         if (!message) {
+//             console.log("📭 Нет авторассылок для отправки");
+//             return;
+//         }
+//
+//         for (let chatId of subscribers) {
+//             if (message.type === 'text') {
+//                 await bot.sendMessage(chatId, `📢 ${message.content}`);
+//             } else if (message.type === 'photo') {
+//                 await bot.sendPhoto(chatId, message.content, {
+//                     caption: message.caption || undefined
+//                 });
+//             }
+//         }
+//
+//         console.log("✅ Авторассылка успешно отправлена:", message);
+//     } catch (err) {
+//         console.error("❌ Ошибка авторассылки:", err);
+//     }
+// }, {
+//     timezone: "Europe/Moscow"
+// });
 
 startBot().then(() => {
     console.log('Bot started!');
