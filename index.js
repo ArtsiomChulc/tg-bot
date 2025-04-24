@@ -22,6 +22,8 @@ const pendingBroadcasts = new Map(); // временное хранилище р
 const pendingAutoBroadcasts = new Map(); // временное хранилище авто рассылки от админа
 
 const startBot = async () => {
+    await bot.setMyCommands([]);
+
     bot.on('message', async msq => {
         const text = msq.text;
         const chatId = msq.chat.id;
