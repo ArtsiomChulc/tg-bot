@@ -182,7 +182,7 @@ const startBot = async () => {
 
 
 startBot().then(() => {
-    scheduleAutoBroadcast(bot);
+    // scheduleAutoBroadcast(bot);
     console.log('Bot started!');
 });
 
