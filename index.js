@@ -5,6 +5,7 @@ const {againGame} = require('./helpFunctions');
 const cron = require('node-cron');
 const {addSubscriber, removeSubscriber, getAllSubscribers} = require('./subscribers');
 const { saveAutoMessage, getLastAutoMessage } = require('./autoMessages');
+const {getMainMenu} = require("./helpers/helpFunctions");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
@@ -17,26 +18,6 @@ const web_app_url = process.env.MY_APP;
 
 const pendingBroadcasts = new Map(); // временное хранилище рассылки от админа
 const pendingAutoBroadcasts = new Map(); // временное хранилище авто рассылки от админа
-
-const getMainMenu = (isAdmin = false) => ({
-    reply_markup: {
-        keyboard: isAdmin
-            ? [
-                ['ℹ️ Инфо', '👾 Играть'],
-                ['🌐 Портфолио', '📢 Подписаться'],
-                ['📤 Рассылка', '📊 Кол-во подписчиков'],
-                ['🛠 Создать авторассылку']
-            ]
-            : [
-                ['ℹ️ Инфо', '👾 Играть'],
-                ['🌐 Портфолио', '📢 Подписаться'],
-                ['❌ Отписаться', '🆘 Помощь']
-            ],
-        resize_keyboard: true,
-        one_time_keyboard: false
-    }
-});
-
 
 const startBot = async () => {
     bot.on('message', async msq => {
@@ -235,5 +216,7 @@ cron.schedule('30 8 * * *', async () => {
     timezone: "Europe/Moscow"
 });
 
-startBot();
+startBot().then(() => {
+    console.log('Bot started!');
+});
 
