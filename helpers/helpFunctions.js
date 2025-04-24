@@ -1,6 +1,6 @@
+const {gameOptions} = require("./gameOptions");
 const {getAllSubscribers} = require("../db/subscribers");
 const {saveAutoMessage} = require("./autoMessages");
-const {gameOptions} = require("./gameOptions");
 
 const againGame = async (chatId, bot, chats) => {
     await bot.sendMessage(chatId, `Сейчас загадаю, а ты пробуй отгадать!!!`);
