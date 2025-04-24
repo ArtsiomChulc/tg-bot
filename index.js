@@ -47,15 +47,15 @@ const startBot = async () => {
             return bot.sendMessage(chatId, '❌ Вы отписались от рассылки.');
         }
 
-        if (text === '🌐 Портфолио' || text === "/web_app") {
-            return bot.sendMessage(chatId, `Открыть портфолио`, {
-                reply_markup: {
-                    inline_keyboard: [
-                        [{text: 'Портфолио 🌐', url: web_app_url}]
-                    ]
-                }
-            });
-        }
+        // if (text === '🌐 Портфолио' || text === "/web_app") {
+        //     return bot.sendMessage(chatId, `Открыть портфолио`, {
+        //         reply_markup: {
+        //             inline_keyboard: [
+        //                 [{text: 'Портфолио 🌐', url: web_app_url}]
+        //             ]
+        //         }
+        //     });
+        // }
 
         if (text === '🆘 Помощь' || text === "/help") {
             return bot.sendMessage(chatId, 'Если что-то пошло не так, отправь боту команду /start');
